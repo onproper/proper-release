@@ -6,6 +6,10 @@
   "bin": {
     "proper": "index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onproper/proper-release.git"
+  },
   "keywords": [
     "cdc",
     "postgres",
