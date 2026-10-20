@@ -1,0 +1,80 @@
+name: Publish Provenance to NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  npm-publish:
+    name: Publish Secure NPM Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write 
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          
+      - name: Download Release Binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ${{ github.event.release.tag_name }} --pattern "proper-*"
+
+      - name: Generate and Publish OS-Specific Packages
+        run: |
+          VERSION=${{ github.event.release.tag_name }}
+          CLEAN_VERSION=${VERSION#v}
+          
+          for binary in proper-*; do
+            SUFFIX=${binary#proper-}
+            PLATFORM=$(echo $SUFFIX | cut -d'-' -f1)
+            ARCH=$(echo $SUFFIX | cut -d'-' -f2 | sed 's/.exe//')
+            
+            NODE_OS=$PLATFORM
+            if [ "$PLATFORM" = "windows" ]; then NODE_OS="win32"; fi
+            
+            NODE_ARCH=$ARCH
+            if [ "$ARCH" = "amd64" ]; then NODE_ARCH="x64"; fi
+            
+            PKG_NAME="@onproper/cli-${PLATFORM}-${ARCH}"
+            DIR_NAME="pkg-${PLATFORM}-${ARCH}"
+            
+            mkdir -p $DIR_NAME
+            mv $binary $DIR_NAME/proper
+            if [ "$PLATFORM" = "windows" ]; then mv $DIR_NAME/proper $DIR_NAME/proper.exe; fi
+            chmod +x $DIR_NAME/proper*
+            
+            cat <<EOF > $DIR_NAME/package.json
+            {
+              "name": "$PKG_NAME",
+              "version": "$CLEAN_VERSION",
+              "os": ["$NODE_OS"],
+              "cpu": ["$NODE_ARCH"],
+              "repository": {
+                "type": "git",
+                "url": "git+https://github.com/onproper/proper-release.git"
+              },
+              "publishConfig": {
+                "access": "public"
+              }
+            }
+          EOF
+            
+            cd $DIR_NAME
+            npm publish --access public --provenance
+            cd ..
+          done
+          
+          cd npm
+          npm pkg set optionalDependencies.@onproper/cli-darwin-arm64=$CLEAN_VERSION
+          npm pkg set optionalDependencies.@onproper/cli-darwin-amd64=$CLEAN_VERSION
+          npm pkg set optionalDependencies.@onproper/cli-linux-amd64=$CLEAN_VERSION
+          npm pkg set optionalDependencies.@onproper/cli-linux-arm64=$CLEAN_VERSION
+          npm pkg set optionalDependencies.@onproper/cli-windows-amd64=$CLEAN_VERSION
+          
+          npm publish --access public --provenance

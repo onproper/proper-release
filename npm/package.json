@@ -1,0 +1,21 @@
+{
+  "name": "@onproper/cli",
+  "version": "1.0.26",
+  "description": "The Zero-Trust Entity Orchestration & Compliance Engine",
+  "main": "index.js",
+  "bin": {
+    "proper": "index.js"
+  },
+  "keywords": [
+    "cdc",
+    "postgres",
+    "compliance",
+    "webhook",
+    "proper"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Proper",
+  "license": "MIT"
+}
