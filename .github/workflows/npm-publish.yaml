@@ -71,6 +71,7 @@ jobs:
           done
           
           cd npm
+          npm pkg set version=$CLEAN_VERSION
           npm pkg set optionalDependencies.@onproper/cli-darwin-arm64=$CLEAN_VERSION
           npm pkg set optionalDependencies.@onproper/cli-darwin-amd64=$CLEAN_VERSION
           npm pkg set optionalDependencies.@onproper/cli-linux-amd64=$CLEAN_VERSION
